@@ -4,15 +4,12 @@ import { parse } from 'csv-parse/sync';
 /** @type {import('./$types').RequestHandler} */
 export function GET() {
 
-    const data = parseFactoryCSVtoColumns();
+    const data = parseFactoryCSVtoList();
 
-
-    console.log(pl.DataFrame(data));
-
-    return new Response("Yes");
+    return new Response(JSON.stringify(data));
 }
 
-function parseFactoryCSVtoColumns() {
+function parseFactoryCSVtoList() {
 
 
     const id = ( /** @type {any} */ it) => it;
@@ -42,27 +39,27 @@ function parseFactoryCSVtoColumns() {
     const colmap = [{
             name: 'Item',
             index: 0,
-            map: id,
+            transform: id,
         },
         {
             name: 'Items',
             index: 1,
-            map: id,
+            transform: id,
         },
         {
             name: 'Inputs',
             index: 5,
-            map: list_str_num_to_map,
+            transform: list_str_num_to_map,
         },
         {
             name: 'Outputs',
             index: 11,
-            map: id,
+            transform: id,
         },
         {
             name: 'Targets',
             index: 12,
-            map: list_str_num_to_map,
+            transform: list_str_num_to_map,
         },
     ];
 
@@ -72,22 +69,25 @@ function parseFactoryCSVtoColumns() {
 
     // const columns = data[0];
 
-    const column_output_map = colmap.reduce( /** @type {(acc: Object.<String, any[]>, cur: {name:String, index:Number, map:(it:String)=>any}) => Object.<String, [any]>} */ (acc, cur) => {
-        acc[cur.name] = [];
-        return acc;
-    }, {});
+    // let column_output_map = colmap.reduce( /** @type {(acc: Object.<String, any[]>, cur: {name:String, index:Number, map:(it:String)=>any}) => Object.<String, [any]>} */ (acc, cur) => {
+    //     acc[cur.name] = [];
+    //     return acc;
+    // }, {});
+
+    let output = [];
 
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
 
-        colmap.forEach(colm => {
-            column_output_map[colm.name].push(colm.map(row[colm.index]));
-        });
+        output.push(colmap.reduce((acc, cur) => {
+            acc.push(cur.transform(row[cur.index]));
+            return acc;
+        }, []));
 
 
     }
 
-    return column_output_map;
+    return output;
 
 }
 
