@@ -1,187 +1,213 @@
-
 <script>
-    import cytoscape from "cytoscape";
-	import { onMount } from "svelte";
-    
-    /**
+	import cytoscape from 'cytoscape';
+    import cola from 'cytoscape-cola';
+	import { onMount } from 'svelte';
+
+	/**
 	 * @type {HTMLDivElement}
 	 */
-    let gcont;
+	let gcont;
 
-    const layouts = [
+	const layouts = [
+		{
+			name: 'random',
+			animate: true,
+			animationDuration: 1000,
+			animationEasing: 'ease-out'
+		},
+		{
+			name: 'cose',
+
+			// Whether to animate while running the layout
+			// true : Animate continuously as the layout is running
+			// false : Just show the end result
+			// 'end' : Animate with the end result, from the initial positions to the end positions
+			animate: true,
+			animationDuration: 1000,
+			animationEasing: 'ease-out',
+
+			// The layout animates only after this many milliseconds for animate:true
+			// (prevents flashing on fast runs)
+			animationThreshold: 10,
+		},
         {
-            name: 'random',
+            name: 'cola',
             animate: true,
-            animationDuration: 1000,
-            animationEasing: 'ease-out'
-          },
-        {
-  name: 'cose',
+            maxSimulationTime: 40000,
+            refresh: 1,
+            // flow: {axis: 'y', minSeparation: 150},
+            // edgeJaccardLength: 150,
+            avoidOverlap: true,
+            // edgeLength: 400,
+        }
+	];
 
-  // Whether to animate while running the layout
-  // true : Animate continuously as the layout is running
-  // false : Just show the end result
-  // 'end' : Animate with the end result, from the initial positions to the end positions
-  animate: true,
+	let cy;
+    let layout;
+    let layoutIndex;
 
-  // Easing of the animation for animate:'end'
-  animationEasing: 'ease-out',
+	onMount(() => {
+        cytoscape.use(cola);
+		cy = cytoscape({
+			container: gcont,
+			elements: [
+				{
+					data: { group: 'nodes', id: 'a' }
+				},
+				{
+					data: { group: 'nodes', id: 'b' }
+				},
+				{
+					data: { group: 'edges', id: 'ab', source: 'a', target: 'b' }
+				}
+			],
 
-  // The duration of the animation for animate:'end'
-  animationDuration: 2000,
+			style: [
+				// the stylesheet for the graph
+				{
+					selector: 'node',
+					style: {
+						'background-color': '#666',
+						label: 'data(id)'
+					}
+				},
 
-  // The layout animates only after this many milliseconds for animate:true
-  // (prevents flashing on fast runs)
-  animationThreshold: 50,
+				{
+					selector: 'edge',
+					style: {
+						width: 3,
+						'line-color': '#ccc',
+						'target-arrow-color': '#ccc',
+						'target-arrow-shape': 'triangle',
+						'curve-style': 'bezier'
+					}
+				}
+			],
 
-  // Number of iterations between consecutive screen positions update
-  refresh: 20,
+			layout: {
+				name: 'grid',
+				rows: 1
+			}
+		});
+	});
 
-  // Whether to fit the network view after when done
-  fit: true,
+	function addNode() {
+		const rndn = Math.random() * 10000;
 
-  // Padding on fit
-  padding: 30,
+		cy.add([
+			{
+				data: { group: 'nodes', id: `c${rndn}` }
+			},
+			{
+				data: { group: 'edges', id: `c${rndn}b`, source: `c${rndn}`, target: 'b' }
+			}
+		]);
+	}
 
-  // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
-  boundingBox: undefined,
+    let randomNetCounter = 0;
+	function randomNet() {
+		const nodeCount = 70;
+		const connectionThresh = 0.99;
 
-  // Excludes the label when calculating node bounding boxes for the layout algorithm
-  nodeDimensionsIncludeLabels: false,
+		const namefunc = (num) => `rn-${randomNetCounter}-${num}`;
 
-  // Randomize the initial positions of the nodes (true) or use existing positions (false)
-  randomize: false,
+		let toAdd = [];
+		for (let i = 0; i < nodeCount; i++) {
+			toAdd.push({
+				data: { group: 'nodes', id: namefunc(i) }
+			});
+		}
 
-  // Extra spacing between components in non-compound graphs
-  componentSpacing: 40,
+		for (let i = 0; i < nodeCount; i++) {
+			for (let j = 0; j < nodeCount; j++) {
+				// i -> j
+				if (Math.random() > connectionThresh) {
+					toAdd.push({
+						data: {
+							group: 'edges',
+							id: `${namefunc(i)}${namefunc(j)}`,
+							source: namefunc(i),
+							target: namefunc(j)
+						}
+					});
+				}
 
-//   // Node repulsion (non overlapping) multiplier
-//   nodeRepulsion: function( node ){ return 2048; },
+				// j -> i
+				// if (Math.random() > connectionThresh) {
+				// 	toAdd.push({
+				// 		data: {
+				// 			group: 'edges',
+				// 			id: `${namefunc(j)}${namefunc(i)}`,
+				// 			source: namefunc(j),
+				// 			target: namefunc(i)
+				// 		}
+				// 	});
+				// }
+			}
+		}
 
-  // Node repulsion (overlapping) multiplier
-  nodeOverlap: 4,
-
-  // Ideal edge (non nested) length
-  idealEdgeLength: function( edge ){ return 32; },
-
-  // Divisor to compute edge forces
-  edgeElasticity: function( edge ){ return 32; },
-
-  // Nesting factor (multiplier) to compute ideal edge length for nested edges
-  nestingFactor: 1.2,
-
-  // Gravity force (constant)
-  gravity: 1,
-
-  // Maximum number of iterations to perform
-  numIter: 1000,
-
-  // Initial temperature (maximum node displacement)
-  initialTemp: 1000,
-
-  // Cooling factor (how the temperature is reduced between consecutive iterations
-  coolingFactor: 0.99,
-
-  // Lower temperature threshold (below this point the layout will end)
-  minTemp: 1.0
-},
-    ];
-
-    let cy;
-
-    onMount(() => {
-        cy = cytoscape({
-            container: gcont,
-            elements: [
-                {
-                    data: {id: 'a'},
-                },
-                {
-                    data: {id: 'b'}
-                },
-                {
-                    data: {id: 'ab', source: 'a', target: 'b'},
-                },
-            ],
-
-            style: [ // the stylesheet for the graph
-                {
-                selector: 'node',
-                style: {
-                    'background-color': '#666',
-                    'label': 'data(id)'
-                }
-                },
-
-                {
-                selector: 'edge',
-                style: {
-                    'width': 3,
-                    'line-color': '#ccc',
-                    'target-arrow-color': '#ccc',
-                    'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier'
-                }
-                }
-            ],
-
-            layout: {
-                name: 'grid',
-                rows: 1
-            },
-        });
-    });
-
-    function addNode() {
-        const rndn = Math.random() * 10000;
-
-        cy.add([
-            {
-                data: {id: `c${rndn}`}
-            },
-            {
-                data: {id: `c${rndn}b`, source: `c${rndn}`, target:'b'}
-            },
-        ]);
-    }
-
-    function updateLayout(index) {
-        let l = cy.layout(layouts[index]);
-        l.run();
-    }
-
-    function updateLayoutHandler(event) {
-        updateLayout(event.target.value);
-    }
+		cy.add(toAdd);
+        randomNetCounter++;
+	}
     
+    function updateLayout() {
+        if(layoutIndex !== null) {
+            newLayout(layoutIndex);
+        }
+    }
+
+	function newLayout(index) {
+        if(layout !== undefined) {
+            layout.stop();
+        }
+		layout = cy.layout(layouts[index]);
+        layout.run();
+        layoutIndex = index;
+	}
+
+	function updateLayoutHandler(event) {
+		newLayout(event.target.value);
+	}
 </script>
 
-
+<div id="content">
 <h1>Welcome to CytoTest</h1>
 <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
 
+<div id="nodesbar" class="hbar">
+	<button on:click={addNode}>Add Something</button><button on:click={randomNet}
+		>Add Random Net</button
+	>
+</div>
+<div id="layoutsbar" class="hbar">
+	<fieldset on:change={updateLayoutHandler}>
+		<legend>Select a layout:</legend>
 
-
-<div id="nodesbar" class="hbar"><button on:click={addNode}>Add Something</button></div>
-<div id="layoutsbar" class="hbar"><fieldset on:change={updateLayoutHandler}>
-    <legend>Select a layout:</legend>
-
-    {#each layouts as layout, i}
-    {#if false}
-    <input type="radio" id={layout.name} name="layout" value={i} checked/>
-    {:else}
-    <input type="radio" id={layout.name} name="layout" value={i}/>
-    {/if}
-    <label for={layout.name}>{layout.name}</label>
-    {/each}
-</fieldset>
+		{#each layouts as layout, i}
+			{#if false}
+				<input type="radio" id={layout.name} name="layout" value={i} checked />
+			{:else}
+				<input type="radio" id={layout.name} name="layout" value={i} />
+			{/if}
+			<label for={layout.name}>{layout.name}</label>
+		{/each}
+	</fieldset>
+    <button on:click={updateLayout}>Update Layout</button>
 </div>
 
-<div id="gcont" bind:this={gcont}></div>
+<div id="gcont" bind:this={gcont} />
+</div>
 
 <style>
-    #gcont {
-        min-height:500px;
-        height:100%;
+    #content {
+        display:flex;
+        flex-direction: column;
+        flex-flow: column;
+        height:100vh;
     }
+
+    #gcont {
+        flex-grow:1;
+		height: 100%;
+	}
 </style>
