@@ -30,6 +30,7 @@
 		"csv-parse": "^5.3.6",
 		"cytoscape": "^3.23.0",
 		"cytoscape-cola": "^2.5.1",
+		"cytoscape-cose-bilkent": "^4.1.0",
 		"nodejs-polars": "^0.7.3"
 	}
 }

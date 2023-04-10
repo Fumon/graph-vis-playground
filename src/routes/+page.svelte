@@ -1,6 +1,7 @@
 <script>
 	import cytoscape from 'cytoscape';
     import cola from 'cytoscape-cola';
+    import coseBilkent from 'cytoscape-cose-bilkent';
 	import { onMount } from 'svelte';
 
 	/**
@@ -39,7 +40,18 @@
             // edgeJaccardLength: 150,
             avoidOverlap: true,
             // edgeLength: 400,
-        }
+            // randomize: true,
+        },
+        {
+            name: 'cose-bilkent',
+            quality: 'proof',
+            animate: 'end',
+            // randomize: false,
+            edgeElasticity: 0.8,
+            refresh: 1,
+            // idealEdgeLength: 100,
+            nodeDimensionsIncludeLabels: true,
+        },
 	];
 
 	let cy;
@@ -47,7 +59,9 @@
     let layoutIndex;
 
 	onMount(() => {
-        cytoscape.use(cola);
+        
+    cytoscape.use(cola);
+    cytoscape.use(coseBilkent);
 		cy = cytoscape({
 			container: gcont,
 			elements: [
@@ -75,11 +89,12 @@
 				{
 					selector: 'edge',
 					style: {
-						width: 3,
+						width: 9,
 						'line-color': '#ccc',
-						'target-arrow-color': '#ccc',
+						'target-arrow-color': '#c3c',
 						'target-arrow-shape': 'triangle',
-						'curve-style': 'bezier'
+						'curve-style': 'bezier',
+                        // label: 'data(id)',
 					}
 				}
 			],
