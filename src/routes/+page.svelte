@@ -2,59 +2,21 @@
 	import cytoscape from 'cytoscape';
 	import cola from 'cytoscape-cola';
 	import coseBilkent from 'cytoscape-cose-bilkent';
-	import { edgePathBundling, controlPointsToDistances } from '$lib/epb';
+	import { edgePathBundling } from '$lib/epb';
 	import { onMount } from 'svelte';
 
-	import * as td from './test_data.js';
-	import {default as wellknown} from '$lib/convert/well-known.js';
-	import { edgePointsToWDs } from '$lib/cyto/quick';
+	import { default as wellknown } from '$lib/convert/well-known.js';
+	import { HSLToRGB, edgePointsToWDs } from '$lib/cyto/quick';
 
-	const elems = wellknown.simple;
+	import Victor from 'victor';
+
+	const elems = wellknown.airlines;
 
 	/**
 	 * @type {HTMLDivElement}
 	 */
 	let gcont;
 	let epb;
-
-	const defaultElements = [
-		// Nodes
-		{ data: { id: 'A' }, position: { x: 20, y: 20 } },
-		{ data: { id: 'B' }, position: { x: 180, y: 20 } },
-		{ data: { id: 'C' }, position: { x: 340, y: 20 } },
-		{ data: { id: 'D' }, position: { x: 20, y: 180 } },
-		{ data: { id: 'E' }, position: { x: 180, y: 180 } },
-		{ data: { id: 'F' }, position: { x: 340, y: 180 } },
-		{ data: { id: 'G' }, position: { x: 20, y: 340 } },
-		{ data: { id: 'H' }, position: { x: 180, y: 340 } },
-		{ data: { id: 'I' }, position: { x: 340, y: 340 } },
-
-		// Additional nodes
-		{ data: { id: 'J' }, position: { x: 100, y: 100 } },
-		{ data: { id: 'K' }, position: { x: 260, y: 100 } },
-		{ data: { id: 'L' }, position: { x: 100, y: 260 } },
-		{ data: { id: 'M' }, position: { x: 260, y: 260 } },
-
-		// Edges
-		{ data: { id: 'AB', source: 'A', target: 'B' } },
-		{ data: { id: 'BC', source: 'B', target: 'C' } },
-		{ data: { id: 'AD', source: 'A', target: 'D' } },
-		{ data: { id: 'BE', source: 'B', target: 'E' } },
-		{ data: { id: 'CF', source: 'C', target: 'F' } },
-		{ data: { id: 'DG', source: 'D', target: 'G' } },
-		{ data: { id: 'EH', source: 'E', target: 'H' } },
-		{ data: { id: 'FI', source: 'F', target: 'I' } },
-		{ data: { id: 'GH', source: 'G', target: 'H' } },
-		{ data: { id: 'HI', source: 'H', target: 'I' } },
-
-		// Additional edges
-		{ data: { id: 'AJ', source: 'A', target: 'J' } },
-		{ data: { id: 'BK', source: 'B', target: 'K' } },
-		{ data: { id: 'CL', source: 'C', target: 'L' } },
-		{ data: { id: 'DM', source: 'D', target: 'M' } },
-		{ data: { id: 'JL', source: 'J', target: 'L' } },
-		{ data: { id: 'KM', source: 'K', target: 'M' } }
-	];
 
 	const layouts = [
 		{
@@ -110,16 +72,20 @@
 	let layout;
 	let layoutIndex;
 
+	function edgeAngleToColor(e) {
+		const s = Victor.fromObject(e.source().position());
+		const t = Victor.fromObject(e.target().position());
+
+		const angle = t.clone().subtract(s).angleDeg();
+
+		return `rgb(${HSLToRGB(angle, 55, 40)})`;
+	}
+
 	onMount(() => {
-		// console.log(exampleData);
-		// console.log(elems);
 		cytoscape.use(cola);
 		cytoscape.use(coseBilkent);
-
-		// const graphdata = td.positionTest;
-		const graphdata = elems;2
-		console.log(JSON.stringify(graphdata));
-
+		
+		const graphdata = elems;
 		cy = cytoscape({
 			container: gcont,
 			elements: graphdata,
@@ -130,18 +96,21 @@
 					selector: 'node',
 					style: {
 						'background-color': '#666',
-						label: 'data(id)'
+						// label: 'data(id)',
+						width: 0.5,
+						height: 0.5,
 					}
 				},
 
 				{
 					selector: 'edge',
 					style: {
-						width: 9,
-						'line-color': '#ccc',
-						'target-arrow-color': '#c3c',
-						'target-arrow-shape': 'triangle',
-						'curve-style': 'bezier'
+						width: 0.1,
+						'line-color': edgeAngleToColor,
+						'line-opacity': 0.4,
+						// 'target-arrow-color': '#c3c',
+						// 'target-arrow-shape': 'triangle',
+						'curve-style': 'straight'
 						// label: 'data(id)',
 					}
 				}
@@ -165,7 +134,7 @@
 			]
 		});
 
-		updateBcy();
+		// updateBcy();
 
 		// cy.on('position', (event) => {
 		// 	updateBcy();
@@ -183,17 +152,20 @@
 					selector: 'node',
 					style: {
 						'background-color': '#666',
-						label: 'data(id)'
+						// label: 'data(id)',
+						width: 0.5,
+						height: 0.5,
 					}
 				},
 				{
 					selector: 'edge',
 					style: {
-						width: 3,
-						'line-color': '#ccc',
-						'curve-style': 'unbundled-bezier',
-						'target-arrow-color': 'black',
-						'target-arrow-shape': 'triangle'
+						width: 0.1,
+						'line-color': edgeAngleToColor,
+						'line-opacity': 0.4,
+						// 'curve-style': 'unbundled-bezier',
+						// 'target-arrow-color': 'black',
+						// 'target-arrow-shape': 'triangle'
 					}
 				}
 			],
@@ -208,37 +180,34 @@
 			pan: c1json.pan
 		});
 
-		// console.log(JSON.stringify(c1json.elements));
-
-		const k = 2;
-		const d = 1;
+		const k = 3.5;
+		const d = 2;
+		
+		console.time("ControlP");
 		let controlPoints = edgePathBundling(cy, k, d);
+		console.timeEnd("ControlP");
 
-		// console.log(JSON.stringify(controlPoints));
-
-		// console.log(`${JSON.stringify(controlPoints)}`);
 		bcy.edges().forEach((edge) => {
 			const id = edge.id();
-			// console.log(`${edge.id()}`);
 
 			if (controlPoints[id]) {
-				const {w, d} = edgePointsToWDs(edge, controlPoints[id]);
-				// console.log(JSON.stringify(w));
+				const { w, d } = edgePointsToWDs(edge, controlPoints[id]);
 
-				console.log(`${w}`)
+
+				// console.log(w.map((w, i) => `${d[i]} ~ ${w}`));
 
 				edge.style({
-					'line-color': 'black',
-					// 'curve-style': 'unbundled-bezier',
-					'width': 1,
+					// 'line-color': 'black',
+					'curve-style': 'unbundled-bezier',
+					width: 0.1,
 					'control-point-distances': d.slice(1, -2),
 					'control-point-weights': w.slice(1, -2),
-					'edge-distances': 'node-position',
+					'edge-distances': 'node-position'
 				});
 			} else {
 				edge.style({
-					'curve-style': 'straight',
-				})
+					'curve-style': 'straight'
+				});
 			}
 		});
 	}
@@ -348,6 +317,7 @@
 			{/each}
 		</fieldset>
 		<button on:click={updateLayout}>Update Layout</button>
+		<button on:click={updateBcy}>Update bcy</button>
 	</div>
 
 	<div class="row">

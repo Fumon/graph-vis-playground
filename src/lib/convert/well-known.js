@@ -3,11 +3,12 @@
 // To
 // { nodes: [{data: {id: "99", x: 123, y: 456}, ...], edges: [{data: {id: "0-131", source:"0",target: "131"}}, ...,] }
 export function convert(input_data) {
-    const scale = 5;
+    const scale = 1;
+    const flipy = -1;
     let count = 0;
     return {
         nodes: input_data["nodes"].map((node) => {
-            return { data: { id: node.id }, position: { x: node.x * scale, y: node.y * scale } };
+            return { data: { id: node.id }, position: { x: node.x * scale, y: node.y * scale * flipy } };
         }),
         edges: input_data["links"].map((link) => {
             count = count + 1;

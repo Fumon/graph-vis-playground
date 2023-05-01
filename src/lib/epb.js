@@ -16,11 +16,11 @@ function dijkstraWithSkip(cy, source, target, weight, skip) {
     const options = {
         root: source,
         weight: (edge) => skip.has(edge) ? Infinity : weight(edge),
-        directed: true
+        directed: false
     };
 
     const dijkstra = cy.elements().dijkstra(options);
-    return dijkstra;
+    return dijkstra.pathTo(target);
 }
 
 export function edgePathBundling(cy, k, d) {
@@ -46,19 +46,22 @@ export function edgePathBundling(cy, k, d) {
         skip.add(edge);
 
         const { source, target } = getSourceTarget(edge);
-        const dijkstraSol = dijkstraWithSkip(cy, source, target, (e) => weight[e.id()], skip);
-        const path = dijkstraSol.pathTo(target);
+        const path = dijkstraWithSkip(cy, source, target, (e) => weight[e.id()], skip);
 
-        if (path.length == 1) {
+        if (path.length < 3) {
             skip.delete(edge);
             continue;
         }
 
-        const pathLength = dijkstraSol.distanceTo(target);
+        const pathLength = path.slice(1).reduce((acc, point, i) => {
+            const dx = point.x - path[i].x;
+            const dy = point.y - path[i].y;
+            return acc + Math.sqrt(dx * dx + dy * dy);
+        }, 0);
 
         const straightLineDistance = euclideanDistance(source.position(), target.position());
 
-        if (pathLength > k * straightLineDistance) {
+        if (pathLength >= k * straightLineDistance) {
             skip.delete(edge);
             continue;
         }
@@ -69,47 +72,4 @@ export function edgePathBundling(cy, k, d) {
     }
 
     return controlPoints;
-}
-
-export function calculateControlPointDistances(controlPoints, source, target) {
-    const vectorST = { x: target.x - source.x, y: target.y - source.y };
-    const unitVectorST = {
-        x: vectorST.x / Math.sqrt(vectorST.x * vectorST.x + vectorST.y * vectorST.y),
-        y: vectorST.y / Math.sqrt(vectorST.x * vectorST.x + vectorST.y * vectorST.y)
-    };
-
-    const unitVectorPerp = { x: -unitVectorST.y, y: unitVectorST.x };
-
-    const distances = [];
-    for (let i = 0; i < controlPoints.length; i += 1) {
-        const vectorSP = {
-            x: controlPoints[i].x - source.x,
-            y: controlPoints[i].y - source.y
-        };
-        const distance = vectorSP.x * unitVectorPerp.x + vectorSP.y * unitVectorPerp.y;
-        distances.push(distance);
-    }
-
-    return distances;
-}
-
-// Utility function to calculate the signed distance from a point to a line
-function pointToLineSignedDistance(p, a, b) {
-    const area = ((b.x - a.x) * (a.y - p.y) - (a.x - p.x) * (b.y - a.y)) / 2;
-    const length = euclideanDistance(a, b);
-    return (2 * area) / length;
-}
-
-// Convert control points to control-point-distances
-export function controlPointsToDistances(edge, controlPoints) {
-    const { source, target } = getSourceTarget(edge);
-    const sourcePos = source.position();
-    const targetPos = target.position();
-
-    if (sourcePos.x === targetPos.x && sourcePos.y === targetPos.y) {
-        // If they are the same, return an array of zeros
-        return Array(controlPoints.length).fill(0);
-    }
-
-    return controlPoints.map((point) => pointToLineSignedDistance(point, sourcePos, targetPos));
 }

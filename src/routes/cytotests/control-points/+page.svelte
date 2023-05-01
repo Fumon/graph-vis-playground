@@ -50,11 +50,11 @@
 
 	const cornerPositions = {
         'ctl': {x: 0, y: 0},
-		'tm': {x: 100, y: 0},
-		'ctr': {x: 200, y: 0},
-		'cbl': {x: 0, y: 200},
-		'bm': {x: 100, y: 200},
-		'cbr': {x: 200, y: 200},
+		'tm': {x: 1000, y: 0},
+		'ctr': {x: 2000, y: 0},
+		'cbl': {x: 0, y: 2000},
+		'bm': {x: 1000, y: 2000},
+		'cbr': {x: 2000, y: 2000},
     };
 
 	const testElems = {
