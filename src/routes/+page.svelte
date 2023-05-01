@@ -5,11 +5,11 @@
 	import { edgePathBundling, controlPointsToDistances } from '$lib/epb';
 	import { onMount } from 'svelte';
 
-	import * as exampleData from './cubes1.json';
 	import * as td from './test_data.js';
-	import { convert } from '$lib/convert/well-known.js';
+	import {default as wellknown} from '$lib/convert/well-known.js';
+	import { edgePointsToWDs } from '$lib/cyto/quick';
 
-	const elems = convert(exampleData);
+	const elems = wellknown.simple;
 
 	/**
 	 * @type {HTMLDivElement}
@@ -117,7 +117,7 @@
 		cytoscape.use(coseBilkent);
 
 		// const graphdata = td.positionTest;
-		const graphdata = elems;
+		const graphdata = elems;2
 		console.log(JSON.stringify(graphdata));
 
 		cy = cytoscape({
@@ -190,9 +190,8 @@
 					selector: 'edge',
 					style: {
 						width: 3,
-						// 'line-color': '#ccc',
+						'line-color': '#ccc',
 						'curve-style': 'unbundled-bezier',
-						'line-color': 'black',
 						'target-arrow-color': 'black',
 						'target-arrow-shape': 'triangle'
 					}
@@ -209,11 +208,13 @@
 			pan: c1json.pan
 		});
 
-		console.log(JSON.stringify(c1json.elements));
+		// console.log(JSON.stringify(c1json.elements));
 
-		const k = 1.5;
+		const k = 2;
 		const d = 1;
 		let controlPoints = edgePathBundling(cy, k, d);
+
+		// console.log(JSON.stringify(controlPoints));
 
 		// console.log(`${JSON.stringify(controlPoints)}`);
 		bcy.edges().forEach((edge) => {
@@ -221,21 +222,23 @@
 			// console.log(`${edge.id()}`);
 
 			if (controlPoints[id]) {
-				const distances = controlPointsToDistances(edge, controlPoints[id]);
+				const {w, d} = edgePointsToWDs(edge, controlPoints[id]);
+				// console.log(JSON.stringify(w));
 
-				// const weights = Array.from(
-				// 	{ length: distances.length },
-				// 	(_, i) => i / (distances.length - 1)
-				// );
+				console.log(`${w}`)
 
-				// console.log(`ControlPoints: ${JSON.stringify(controlPoints[id])}`)
-				// console.log(`Points: ${JSON.stringify(edge.source().position())} ${JSON.stringify(edge.target().position())}`)
-				// console.log(`Distances: ${JSON.stringify(distances)}`);
-				// console.log(`Weights: ${JSON.stringify(weights)}`);
 				edge.style({
-					'control-point-distances': distances,
-					'control-point-weights': '0.5'
+					'line-color': 'black',
+					// 'curve-style': 'unbundled-bezier',
+					'width': 1,
+					'control-point-distances': d.slice(1, -2),
+					'control-point-weights': w.slice(1, -2),
+					'edge-distances': 'node-position',
 				});
+			} else {
+				edge.style({
+					'curve-style': 'straight',
+				})
 			}
 		});
 	}
@@ -364,8 +367,8 @@
 	.sbs {
 		/* height: 100%;
 		flex-grow: 1; */
-		width: 500px;
-		height: 500px;
+		width: 1000px;
+		height: 1000px;
 	}
 
 	.row {

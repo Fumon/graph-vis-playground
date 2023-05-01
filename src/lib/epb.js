@@ -15,12 +15,12 @@ function getSourceTarget(edge) {
 function dijkstraWithSkip(cy, source, target, weight, skip) {
     const options = {
         root: source,
-        weight: (edge) => weight(edge),
+        weight: (edge) => skip.has(edge) ? Infinity : weight(edge),
         directed: true
     };
 
-    const dijkstra = cy.elements().filter((ele) => !skip.has(ele)).dijkstra(options);
-    return dijkstra.pathTo(target);
+    const dijkstra = cy.elements().dijkstra(options);
+    return dijkstra;
 }
 
 export function edgePathBundling(cy, k, d) {
@@ -36,7 +36,6 @@ export function edgePathBundling(cy, k, d) {
     });
 
     const sortedEdges = cy.edges().sort((a, b) => weight[b.id()] - weight[a.id()]);
-
     const controlPoints = {};
 
     for (const edge of sortedEdges) {
@@ -47,14 +46,16 @@ export function edgePathBundling(cy, k, d) {
         skip.add(edge);
 
         const { source, target } = getSourceTarget(edge);
-        const path = dijkstraWithSkip(cy, source, target, (e) => weight[e.id()], skip);
+        const dijkstraSol = dijkstraWithSkip(cy, source, target, (e) => weight[e.id()], skip);
+        const path = dijkstraSol.pathTo(target);
 
-        if (!path) {
+        if (path.length == 1) {
             skip.delete(edge);
             continue;
         }
 
-        const pathLength = path.edges().reduce((sum, e) => sum + weight[e.id()], 0);
+        const pathLength = dijkstraSol.distanceTo(target);
+
         const straightLineDistance = euclideanDistance(source.position(), target.position());
 
         if (pathLength > k * straightLineDistance) {
