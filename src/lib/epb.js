@@ -1,3 +1,5 @@
+import { edgePointsToWDs } from "./cyto/quick";
+
 // Utility function to calculate Euclidean distance between two points
 function euclideanDistance(p1, p2) {
     return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
@@ -24,52 +26,72 @@ function dijkstraWithSkip(cy, source, target, weight, skip) {
 }
 
 export function edgePathBundling(cy, k, d) {
-    const lock = new Set();
-    const skip = new Set();
-    const weight = {};
-
-    cy.edges().forEach((edge) => {
-        const { source, target } = getSourceTarget(edge);
-        const distance = euclideanDistance(source.position(), target.position());
-        weight[edge.id()] = Math.pow(distance, d);
-        // skip.add(edge);
+    const ns = "_epb";
+    cy.batch(() => {
+        cy.edges().forEach((edge) => {
+            const { source, target } = getSourceTarget(edge);
+            const distance = euclideanDistance(source.position(), target.position());
+            edge.scratch(ns, {
+                skip: false,
+                lock: false,
+            });
+            edge.data({
+                controlPointCount: 0,
+                controlPoints: null,
+                length: distance,
+                weight: Math.pow(distance, d),
+            });
+        });
     });
 
-    const sortedEdges = cy.edges().sort((a, b) => weight[b.id()] - weight[a.id()]);
-    const controlPoints = {};
+
+    const sortedEdges = cy.edges().sort((a, b) => b.data('weight') - a.data('weight'));
 
     for (const edge of sortedEdges) {
-        if (lock.has(edge)) {
+        const d = edge.data();
+        let s = edge.scratch(ns);
+        if (s.lock) {
             continue;
         }
 
-        skip.add(edge);
+        s.skip = true;
+        edge.scratch(ns, s);
 
         const { source, target } = getSourceTarget(edge);
-        const path = dijkstraWithSkip(cy, source, target, (e) => weight[e.id()], skip);
+        const astar = cy.elements().filter((elem) => elem.isEdge() ? !elem.scratch(ns).skip : true).aStar({
+            root: source,
+            goal: target,
+            weight: (e) => e.data('weight'),
+            directed: false,
+        });
 
-        if (path.length < 3) {
-            skip.delete(edge);
+
+        if (!astar.found || astar.path.length < 3) {
+            s.skip = false;
+            edge.scratch(ns, s);
             continue;
         }
 
-        const pathLength = path.slice(1).reduce((acc, point, i) => {
-            const dx = point.x - path[i].x;
-            const dy = point.y - path[i].y;
-            return acc + Math.sqrt(dx * dx + dy * dy);
-        }, 0);
+        const path = astar.path;
 
-        const straightLineDistance = euclideanDistance(source.position(), target.position());
+        const pathLength = path.edges().map((e) => e.data('length')).reduce((p, c) => p + c);
+
+        const straightLineDistance = edge.data('length');
 
         if (pathLength >= k * straightLineDistance) {
-            skip.delete(edge);
+            s.skip = false;
+            edge.scratch(ns, s);
             continue;
         }
 
-        controlPoints[edge.id()] = path.nodes().map((node) => node.position());
+        const cps = path.nodes().map((node) => node.position()).slice(1, -2);
+        edge.data('controlPoints', edgePointsToWDs(edge, cps));
+        edge.data('controlPointCount', cps.length);
 
-        path.edges().forEach((e) => lock.add(e));
+        path.edges().forEach((e) => {
+            let escratch = e.scratch(ns);
+            escratch.lock = true;
+            e.scratch(ns, escratch);
+        });
     }
-
-    return controlPoints;
 }

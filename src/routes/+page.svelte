@@ -6,11 +6,11 @@
 	import { onMount } from 'svelte';
 
 	import { default as wellknown } from '$lib/convert/well-known.js';
-	import { HSLToRGB, edgePointsToWDs } from '$lib/cyto/quick';
+	import { HSLToRGB, edgePointsToWDs, paperAssignColor } from '$lib/cyto/quick';
 
 	import Victor from 'victor';
 
-	const elems = wellknown.cubes2;
+	const elems = wellknown.migrations;
 
 	/**
 	 * @type {HTMLDivElement}
@@ -81,10 +81,14 @@
 		return `rgb(${HSLToRGB(angle, 55, 40)})`;
 	}
 
+	function paperAngleToColor(e) {
+		return paperAssignColor(e.source().position(), e.target().position());
+	}
+
 	onMount(() => {
 		cytoscape.use(cola);
 		cytoscape.use(coseBilkent);
-		
+
 		const graphdata = elems;
 		cy = cytoscape({
 			container: gcont,
@@ -98,15 +102,15 @@
 						'background-color': '#666',
 						// label: 'data(id)',
 						width: 0.5,
-						height: 0.5,
+						height: 0.5
 					}
 				},
 
 				{
 					selector: 'edge',
 					style: {
-						width: 0.1,
-						'line-color': edgeAngleToColor,
+						width: 0.2,
+						'line-color': paperAngleToColor,
 						'line-opacity': 0.4,
 						// 'target-arrow-color': '#c3c',
 						// 'target-arrow-shape': 'triangle',
@@ -136,27 +140,27 @@
 
 		// updateBcy();
 
-		cy.on('position', (event) => {
-			updateBcy();
-		});
+		// cy.on('position', (event) => {
+		// 	updateBcy();
+		// });
 	});
 
 	function updateBcy() {
 		bcy.unmount();
 		bcy.destroy();
 
-		const k = 2;
-		const d = 2;
-		
-		console.time("ControlP");
-		const controlPoints = edgePathBundling(cy, k, d);
-		console.timeEnd("ControlP");
+		const k = 2.0;
+		const d = 2.0;
 
-		let controlWDs = {};
-		for(const cp in controlPoints) {
-			const {w, d} = edgePointsToWDs(cy.$id(cp), controlPoints[cp]);
-			controlWDs[cp] = {w: w.slice(1, -2), d: d.slice(1, -2) };
-		}
+		console.time('ControlP');
+		edgePathBundling(cy, k, d);
+		console.timeEnd('ControlP');
+
+		// let controlWDs = {};
+		// for(const cp in controlPoints) {
+		// 	const {w, d} = edgePointsToWDs(cy.$id(cp), controlPoints[cp]);
+		// 	controlWDs[cp] = {w: w.slice(1, -2), d: d.slice(1, -2) };
+		// }
 
 		const c1json = cy.json();
 		bcy = cytoscape({
@@ -168,21 +172,34 @@
 					style: {
 						'background-color': '#666',
 						// label: 'data(id)',
-						width: 0.5,
-						height: 0.5,
+						width: 0.1,
+						height: 0.1
 					}
 				},
 				{
-					selector: 'edge',
+					selector: 'edge[controlPointCount < 1]',
 					style: {
-						width: 0.1,
-						'line-color': edgeAngleToColor,
+						width: 0.2,
+						'line-color': paperAngleToColor,
 						'line-opacity': 0.4,
 
-						'curve-style': (e) => controlWDs[e.id()] ? 'unbundled-bezier'  :  'straight',
-						'control-point-distances': (e) => controlWDs[e.id()] ? controlWDs[e.id()].d  : [0],
-						'control-point-weights': (e) => controlWDs[e.id()] ? controlWDs[e.id()].w  : [0.5],
-						'edge-distances': 'node-position',
+						'curve-style': 'straight',
+						// 'curve-style': 'unbundled-bezier',
+						// 'target-arrow-color': 'black',
+						// 'target-arrow-shape': 'triangle'
+					}
+				},
+				{
+					selector: 'edge[controlPointCount > 0]',
+					style: {
+						width: 0.2,
+						'line-color': paperAngleToColor,
+						'line-opacity': 0.4,
+
+						'curve-style': 'unbundled-bezier',
+						'control-point-distances': (e) => e.data('controlPoints').d,
+						'control-point-weights': (e) => e.data('controlPoints').w,
+						'edge-distances': 'node-position'
 						// 'curve-style': 'unbundled-bezier',
 						// 'target-arrow-color': 'black',
 						// 'target-arrow-shape': 'triangle'
@@ -193,7 +210,7 @@
 				name: 'preset'
 			},
 			zoom: c1json.zoom,
-			pan: c1json.pan,
+			pan: c1json.pan
 		});
 	}
 
