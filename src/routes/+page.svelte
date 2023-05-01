@@ -10,7 +10,7 @@
 
 	import Victor from 'victor';
 
-	const elems = wellknown.airlines;
+	const elems = wellknown.cubes2;
 
 	/**
 	 * @type {HTMLDivElement}
@@ -136,17 +136,32 @@
 
 		// updateBcy();
 
-		// cy.on('position', (event) => {
-		// 	updateBcy();
-		// });
+		cy.on('position', (event) => {
+			updateBcy();
+		});
 	});
 
 	function updateBcy() {
 		bcy.unmount();
 		bcy.destroy();
 
+		const k = 2;
+		const d = 2;
+		
+		console.time("ControlP");
+		const controlPoints = edgePathBundling(cy, k, d);
+		console.timeEnd("ControlP");
+
+		let controlWDs = {};
+		for(const cp in controlPoints) {
+			const {w, d} = edgePointsToWDs(cy.$id(cp), controlPoints[cp]);
+			controlWDs[cp] = {w: w.slice(1, -2), d: d.slice(1, -2) };
+		}
+
+		const c1json = cy.json();
 		bcy = cytoscape({
 			container: epb,
+			elements: c1json.elements,
 			style: [
 				{
 					selector: 'node',
@@ -163,52 +178,22 @@
 						width: 0.1,
 						'line-color': edgeAngleToColor,
 						'line-opacity': 0.4,
+
+						'curve-style': (e) => controlWDs[e.id()] ? 'unbundled-bezier'  :  'straight',
+						'control-point-distances': (e) => controlWDs[e.id()] ? controlWDs[e.id()].d  : [0],
+						'control-point-weights': (e) => controlWDs[e.id()] ? controlWDs[e.id()].w  : [0.5],
+						'edge-distances': 'node-position',
 						// 'curve-style': 'unbundled-bezier',
 						// 'target-arrow-color': 'black',
 						// 'target-arrow-shape': 'triangle'
 					}
 				}
 			],
-			layout: 'preset'
-		});
-
-		const c1json = cy.json();
-		bcy.json({
-			elements: c1json.elements,
-			layout: c1json.layout,
+			layout: {
+				name: 'preset'
+			},
 			zoom: c1json.zoom,
-			pan: c1json.pan
-		});
-
-		const k = 3.5;
-		const d = 2;
-		
-		console.time("ControlP");
-		let controlPoints = edgePathBundling(cy, k, d);
-		console.timeEnd("ControlP");
-
-		bcy.edges().forEach((edge) => {
-			const id = edge.id();
-
-			if (controlPoints[id]) {
-				const { w, d } = edgePointsToWDs(edge, controlPoints[id]);
-
-
-				// console.log(w.map((w, i) => `${d[i]} ~ ${w}`));
-
-				edge.style({
-					// 'line-color': 'black',
-					'curve-style': 'unbundled-bezier',
-					width: 0.1,
-					'control-point-distances': d.slice(1, -2),
-					'control-point-weights': w.slice(1, -2),
-					'edge-distances': 'node-position'
-				});
-			} else {
-				edge.style({
-					'curve-style': 'straight'
-				});
-			}
+			pan: c1json.pan,
 		});
 	}
 
