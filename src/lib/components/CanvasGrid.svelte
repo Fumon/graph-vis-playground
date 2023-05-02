@@ -3,8 +3,9 @@
 	import { afterUpdate } from 'svelte';
 
 	let canvasContainer;
-	let canvases = ['straight', 'curvy', 'curly', 'curvy squared'];
-	let canvasspecs = canvases.map((name) => ({ name: name }));
+    export let canvases;
+	//let canvases = ;
+	let canvasspecs = canvases ?? ['straight', 'curvy', 'curly', 'curvy squared'].map((name) => ({ name: name }));
 	let canvaselements = {};
 
 
@@ -26,6 +27,8 @@
             // debugger;
 			elem.width = Math.floor(elem.parentNode.clientWidth);
             elem.height = Math.floor(elem.parentNode.clientHeight) - 5;
+
+            c.f(elem);
 		});
 	}
 

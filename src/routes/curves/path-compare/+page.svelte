@@ -2,6 +2,7 @@
 
 <script>
     import CanvasGrid from "$lib/components/CanvasGrid.svelte";
+	import PathCompare from "./PathCompare.svelte";
 </script>
 
 
@@ -35,6 +36,6 @@
         <h4>Toolbar</h4>
     </div>
     <div class="canvas-grid">
-        <CanvasGrid />
+        <PathCompare />
     </div>
 </div>
