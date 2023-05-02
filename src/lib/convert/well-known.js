@@ -3,8 +3,8 @@
 // To
 // { nodes: [{data: {id: "99", x: 123, y: 456}, ...], edges: [{data: {id: "0-131", source:"0",target: "131"}}, ...,] }
 export function convert(input_data) {
-    const scale = 0.8;
-    const xscale = 1.0;
+    const scale = 1;
+    const xscale = 1;
     const flipy = -1;
     let count = 0;
     return {

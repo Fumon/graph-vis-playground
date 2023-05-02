@@ -13,18 +13,6 @@ function getSourceTarget(edge) {
     };
 }
 
-// Dijkstra's algorithm implementation that excludes edges in the 'skip' set
-function dijkstraWithSkip(cy, source, target, weight, skip) {
-    const options = {
-        root: source,
-        weight: (edge) => skip.has(edge) ? Infinity : weight(edge),
-        directed: false
-    };
-
-    const dijkstra = cy.elements().dijkstra(options);
-    return dijkstra.pathTo(target);
-}
-
 export function edgePathBundling(cy, k, d) {
     const ns = "_epb";
     cy.batch(() => {
@@ -39,13 +27,13 @@ export function edgePathBundling(cy, k, d) {
                 controlPointCount: 0,
                 controlPoints: null,
                 length: distance,
-                weight: Math.pow(distance, d),
+                epbweight: Math.pow(distance, d),
             });
         });
     });
 
 
-    const sortedEdges = cy.edges().sort((a, b) => b.data('weight') - a.data('weight'));
+    const sortedEdges = cy.edges().sort((a, b) => b.data('epbweight') - a.data('epbweight'));
 
     for (const edge of sortedEdges) {
         const d = edge.data();
@@ -61,12 +49,12 @@ export function edgePathBundling(cy, k, d) {
         const astar = cy.elements().filter((elem) => elem.isEdge() ? !elem.scratch(ns).skip : true).aStar({
             root: source,
             goal: target,
-            weight: (e) => e.data('weight'),
+            weight: (e) => e.data('epbweight'),
             directed: false,
         });
 
 
-        if (!astar.found || astar.path.length < 3) {
+        if (astar.found === false || astar.path.length < 3) {
             s.skip = false;
             edge.scratch(ns, s);
             continue;
@@ -74,7 +62,10 @@ export function edgePathBundling(cy, k, d) {
 
         const path = astar.path;
 
-        const pathLength = path.edges().map((e) => e.data('length')).reduce((p, c) => p + c);
+        let pathLength = 0;
+        astar.path.edges().forEach((e) => {
+            pathLength += e.data('length');
+        })
 
         const straightLineDistance = edge.data('length');
 

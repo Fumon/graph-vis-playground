@@ -10,7 +10,7 @@
 
 	import Victor from 'victor';
 
-	const elems = wellknown.migrations;
+	const elems = wellknown.airtraffic;
 
 	/**
 	 * @type {HTMLDivElement}
@@ -149,8 +149,8 @@
 		bcy.unmount();
 		bcy.destroy();
 
-		const k = 2.0;
-		const d = 2.0;
+		const k = 1.8;
+		const d = 2;
 
 		console.time('ControlP');
 		edgePathBundling(cy, k, d);
@@ -179,7 +179,7 @@
 				{
 					selector: 'edge[controlPointCount < 1]',
 					style: {
-						width: 0.2,
+						width: 0.4,
 						'line-color': paperAngleToColor,
 						'line-opacity': 0.4,
 
@@ -192,7 +192,7 @@
 				{
 					selector: 'edge[controlPointCount > 0]',
 					style: {
-						width: 0.2,
+						width: 0.4,
 						'line-color': paperAngleToColor,
 						'line-opacity': 0.4,
 
@@ -333,14 +333,14 @@
 		display: flex;
 		flex-direction: column;
 		flex-wrap: nowrap;
-		height: 100vh;
+		/* height: 100vh; */
 	}
 
 	.sbs {
 		/* height: 100%;
 		flex-grow: 1; */
-		width: 1000px;
-		height: 1000px;
+		width: 100%;
+		height: 1500px;
 	}
 
 	.row {
@@ -348,7 +348,7 @@
 		height: 100%;
 
 		display: flex;
-		flex-direction: row;
+		flex-direction: column;
 		flex-wrap: nowrap;
 	}
 </style>
