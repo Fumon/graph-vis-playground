@@ -24,8 +24,8 @@
 		canvasspecs.forEach((c) => {
 			const elem = canvaselements[c.name];
             // debugger;
-			elem.width = elem.parentElement.clientWidth;
-            elem.height = elem.parentElement.clientHeight;
+			elem.width = Math.floor(elem.parentNode.clientWidth);
+            elem.height = Math.floor(elem.parentNode.clientHeight) - 5;
 		});
 	}
 
@@ -57,6 +57,7 @@
 
 <style>
 	.canvas-container {
+        box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
 		/* align-content: flex-start; */
@@ -70,25 +71,24 @@
 		flex: 0 0 33.3333%;
 		justify-content: center;
 		align-items: center;
-		/* border: 4px dashed black; */
+		border: 4px dashed black;
 	}
 	.canvasbox {
+        box-sizing: border-box;
         position: relative;
 		width: 100%;
 		height: 100%;
+        border: 2px dashed blue;
 	}
 	.canvas-label {
         box-sizing: border-box;
 		position: absolute;
 		top: 0;
 		left: 0;
-		padding: 5px;
+		/* padding: 5px; */
 		background-color: rgba(0, 0, 0, 0.5);
 		color: #fff;
 		font-weight: bold;
 	}
-	canvas {
-		box-sizing: border-box;
-		border: 2px dashed blue;
-	}
+	
 </style>
