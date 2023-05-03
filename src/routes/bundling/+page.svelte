@@ -1,6 +1,8 @@
 <script>
 	import cytoscape from 'cytoscape';
 	import { default as cyCanvas } from 'cytoscape-canvas';
+	cytoscape.use(cyCanvas);
+
 	import { edgePathBundling } from '$lib/epb';
 	import { onMount } from 'svelte';
 
@@ -13,9 +15,13 @@
 	let gcont;
 	let epb;
 
-	const default_data = 'cubes1';
+	const default_data = 'cubes2';
 	const datasets = wellknown_datasets_array;
 	let dataset_index = datasets.findIndex((e) => e.name == default_data);
+	$: picked_dataset = datasets[dataset_index];
+	$: {
+		updateCy(picked_dataset.data);
+	}
 
 	const edge_drawing_default = 'default';
 	const edge_drawing_method = [
@@ -23,10 +29,12 @@
 		{ name: 'b-spline', layer: true, layerf: canvas_bspline }
 	];
 	let edge_drawing_index = edge_drawing_method.findIndex((e) => e.name == edge_drawing_default);
+	$: picked_edge_drawing_method = edge_drawing_method[edge_drawing_index];
+
+	let directed = false;
 
 	let cy;
 	let bcy;
-	let directed = false;
 
 	function edgeAngleToColor(e) {
 		const s = Victor.fromObject(e.source().position());
@@ -176,14 +184,12 @@
 		console.timeEnd('ControlP');
 
 		const c1json = cy.json();
-		const edm = edge_drawing_method[edge_drawing_index];
-
 		bcy = cytoscape({
 			container: epb,
 			elements: c1json.elements,
 			style: [
 				default_node_style(),
-				...(edm.layer
+				...(picked_edge_drawing_method.layer
 					? [null_edge_style()]
 					: [
 							tweak(default_edge_style(), (o) => (o.selector = 'edge[controlPointCount < 1]')),
@@ -205,7 +211,7 @@
 			pan: c1json.pan
 		});
 
-		if (edm.layer) {
+		if (picked_edge_drawing_method.layer) {
 			const layer = bcy.cyCanvas();
 			const canvas = layer.getCanvas();
 			const ctx = canvas.getContext('2d');
@@ -213,64 +219,43 @@
 			bcy.on('render', (evt) => {
 				layer.clear(ctx);
 				layer.setTransform(ctx);
-				edm.layerf(bcy.edges(), ctx);
+				picked_edge_drawing_method.layerf(bcy.edges(), ctx);
 				layer.resetTransform(ctx);
 			});
 		}
 	}
-
-	function updateDatasetHandler(event) {
-		dataset_index = event.target.value;
-		updateCy(datasets[dataset_index].data);
-	}
-	function updateDirectedHandler(event) {
-		directed = event.target.value === 'true' ? true : false;
-	}
-	function updateEdgeDrawingHandler(event) {
-		edge_drawing_index = event.target.value;
-	}
-
-	onMount(() => {
-		cytoscape.use(cyCanvas);
-		updateCy(datasets[dataset_index].data);
-		// cy.on('position', (event) => {
-		// 	updateBcy();
-		// });
-	});
 </script>
 
 <div id="content">
 	Edge Path Bundling Test
 	<div class="toolbar">
-		<fieldset on:change={updateDatasetHandler}>
+		<fieldset>
 			<legend>Select a dataset:</legend>
 
 			{#each datasets as dataset, i}
-				{#if i == dataset_index}
-					<input type="radio" id={dataset.name} name="dataset" value={i} checked />
-				{:else}
-					<input type="radio" id={dataset.name} name="dataset" value={i} />
-				{/if}
-				<label for={dataset.name}>{dataset.name}</label>
+				<label>
+					<input type="radio" bind:group={dataset_index} name="dataset" value={i} />
+					{dataset.name}
+				</label>
 			{/each}
 		</fieldset>
-		<fieldset on:change={updateDirectedHandler}>
+		<fieldset>
 			<legend>Directed:</legend>
-			<input type="radio" id="directed-false" name="directed" value={'false'} checked />
-			<label for="directed-false">false</label>
-			<input type="radio" id="directed-true" name="directed" value={'true'} />
-			<label for="directed-true">true</label>
+			{#each [true, false] as val}
+				<label>
+					<input type="radio" bind:group={directed} name="directed" value={val} />
+					{val}
+				</label>
+			{/each}
 		</fieldset>
-		<fieldset on:change={updateEdgeDrawingHandler}>
+		<fieldset>
 			<legend>Drawing Method:</legend>
 
 			{#each edge_drawing_method as drawing_method, i}
-				{#if i == edge_drawing_index}
-					<input type="radio" id={drawing_method.name} name="drawing_method" value={i} checked />
-				{:else}
-					<input type="radio" id={drawing_method.name} name="drawing_method" value={i} />
-				{/if}
-				<label for={drawing_method.name}>{drawing_method.name}</label>
+				<label>
+					<input type="radio" bind:group={edge_drawing_index} name="drawing_method" value={i} />
+					{drawing_method.name}
+				</label>
 			{/each}
 		</fieldset>
 		<button on:click={updateBcy}>Update bcy</button>
