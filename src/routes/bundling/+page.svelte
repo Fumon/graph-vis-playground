@@ -16,16 +16,12 @@
 	let epb;
 
 	const default_data = 'cubes1';
-	const datasets = wellknown_datasets_array.map((elem) => ({
-		...elem,
-		checked: elem.name == default_data
-	}));
+	const datasets = wellknown_datasets_array;
+	let dataset_index = datasets.findIndex((e) => e.name == default_data);
 
 	const edge_drawing_default = 'default';
-	const edge_drawing_method = [{ name: 'default', layer: false }].map((elem) => ({
-		...elem,
-		checked: elem.name == edge_drawing_default
-	}));
+	const edge_drawing_method = [{ name: 'default', layer: false }];
+	let edge_drawing_index = edge_drawing_method.findIndex((e) => e.name == edge_drawing_default);
 
 	let cy;
 	let bcy;
@@ -93,6 +89,11 @@
 		});
 	}
 
+	function tweak(obj, fn) {
+		fn(obj);
+		return obj;
+	}
+
 	function updateBcy() {
 		if (bcy !== undefined) {
 			bcy.unmount();
@@ -111,46 +112,17 @@
 			container: epb,
 			elements: c1json.elements,
 			style: [
-				{
-					selector: 'node',
-					style: {
-						'background-color': '#666',
-						// label: 'data(id)',
-						width: 0.1,
-						height: 0.1
-					}
-				},
-				{
-					selector: 'edge[controlPointCount < 1]',
-					style: {
-						width: 0.4,
-						'line-color': paperAngleToColor,
-						'line-opacity': 0.4,
-
-						'curve-style': 'straight'
-						// 'curve-style': 'unbundled-bezier',
-						// 'target-arrow-color': 'black',
-						// 'target-arrow-shape': 'triangle'
-					}
-				},
-				{
-					selector: 'edge[controlPointCount > 0]',
-					style: {
-						width: 0.4,
-						'line-color': paperAngleToColor,
-						'line-opacity': 0.4,
-
-						'curve-style': 'unbundled-bezier',
-						'control-point-distances': (e) =>
-							edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).d,
-						'control-point-weights': (e) =>
-							edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).w,
-						'edge-distances': 'node-position'
-						// 'curve-style': 'unbundled-bezier',
-						// 'target-arrow-color': 'black',
-						// 'target-arrow-shape': 'triangle'
-					}
-				}
+				node_drawing_style(),
+				tweak(edge_drawing_style(), (o) => (o.selector = 'edge[controlPointCount < 1]')),
+				tweak(edge_drawing_style(), (o) => {
+					o.selector = 'edge[controlPointCount > 0]';
+					o.style['curve-style'] = 'unbundled-bezier';
+					o.style['control-point-distances'] = (e) =>
+						edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).d;
+					o.style['control-point-weights'] = (e) =>
+						edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).w;
+					o.style['edge-distances'] = 'node-position';
+				})
 			],
 			layout: {
 				name: 'preset'
@@ -161,19 +133,19 @@
 	}
 
 	function updateDatasetHandler(event) {
-		const datasetIndex = event.target.value;
-		updateCy(datasets[datasetIndex].data);
+		dataset_index = event.target.value;
+		updateCy(datasets[dataset_index].data);
 	}
 	function updateDirectedHandler(event) {
 		directed = event.target.value === 'true' ? true : false;
 	}
 	function updateEdgeDrawingHandler(event) {
-		
+		edge_drawing_index = event.target.value;
 	}
 
 	onMount(() => {
 		cytoscape.use(cyCanvas);
-		updateCy(datasets.find((ds) => ds.checked == true).data);
+		updateCy(datasets[dataset_index].data);
 		// cy.on('position', (event) => {
 		// 	updateBcy();
 		// });
@@ -187,7 +159,7 @@
 			<legend>Select a dataset:</legend>
 
 			{#each datasets as dataset, i}
-				{#if dataset.checked == true}
+				{#if i == dataset_index}
 					<input type="radio" id={dataset.name} name="dataset" value={i} checked />
 				{:else}
 					<input type="radio" id={dataset.name} name="dataset" value={i} />
@@ -201,6 +173,18 @@
 			<label for="directed-false">false</label>
 			<input type="radio" id="directed-true" name="directed" value={'true'} />
 			<label for="directed-true">true</label>
+		</fieldset>
+		<fieldset on:change={updateEdgeDrawingHandler}>
+			<legend>Drawing Method:</legend>
+
+			{#each edge_drawing_method as drawing_method, i}
+				{#if i == edge_drawing_index}
+					<input type="radio" id={drawing_method.name} name="drawing_method" value={i} checked />
+				{:else}
+					<input type="radio" id={drawing_method.name} name="drawing_method" value={i} />
+				{/if}
+				<label for={drawing_method.name}>{drawing_method.name}</label>
+			{/each}
 		</fieldset>
 		<button on:click={updateBcy}>Update bcy</button>
 	</div>
