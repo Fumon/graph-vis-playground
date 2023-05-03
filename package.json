@@ -29,6 +29,7 @@
 		"@sveltejs/adapter-node": "^1.2.3",
 		"csv-parse": "^5.3.6",
 		"cytoscape": "^3.23.0",
+		"cytoscape-canvas": "^3.0.1",
 		"cytoscape-cola": "^2.5.1",
 		"cytoscape-cose-bilkent": "^4.1.0",
 		"nodejs-polars": "^0.7.3",

@@ -1,5 +1,6 @@
 <script>
 	import cytoscape from 'cytoscape';
+	import { default as cyCanvas } from 'cytoscape-canvas';
 	import { edgePathBundling } from '$lib/epb';
 	import { onMount } from 'svelte';
 
@@ -14,8 +15,17 @@
 	let gcont;
 	let epb;
 
-	const default_data = "cubes1";
-	const datasets = wellknown_datasets_array.map((elem) => ({...elem, checked: elem.name == default_data ? true : false }) );
+	const default_data = 'cubes1';
+	const datasets = wellknown_datasets_array.map((elem) => ({
+		...elem,
+		checked: elem.name == default_data
+	}));
+
+	const edge_drawing_default = 'default';
+	const edge_drawing_method = [{ name: 'default', layer: false }].map((elem) => ({
+		...elem,
+		checked: elem.name == edge_drawing_default
+	}));
 
 	let cy;
 	let bcy;
@@ -34,32 +44,35 @@
 		return paperAssignColor(e.source().position(), e.target().position());
 	}
 
-	onMount(() => {
+	function node_drawing_style() {
+		return {
+			selector: 'node',
+			style: {
+				'background-color': '#666',
+				// label: 'data(id)',
+				width: 0.5,
+				height: 0.5
+			}
+		};
+	}
 
-		updateCy(datasets.find((ds) => ds.checked == true).data);
-
-		bcy = cytoscape({
-			container: epb,
-			style: [
-				{
-					selector: 'node',
-					style: {
-						'background-color': '#666',
-						label: 'data(id)'
-					}
-				}
-			]
-		});
-
-		// updateBcy();
-
-		// cy.on('position', (event) => {
-		// 	updateBcy();
-		// });
-	});
+	function edge_drawing_style() {
+		return {
+			selector: 'edge',
+			style: {
+				width: 0.2,
+				'line-color': paperAngleToColor,
+				'line-opacity': 0.4,
+				// 'target-arrow-color': '#c3c',
+				// 'target-arrow-shape': 'triangle',
+				'curve-style': 'straight'
+				// label: 'data(id)',
+			}
+		};
+	}
 
 	function updateCy(graphdata) {
-		if(cy !== undefined) {
+		if (cy !== undefined) {
 			cy.unmount();
 			cy.destroy();
 		}
@@ -70,28 +83,8 @@
 
 			style: [
 				// the stylesheet for the graph
-				{
-					selector: 'node',
-					style: {
-						'background-color': '#666',
-						// label: 'data(id)',
-						width: 0.5,
-						height: 0.5
-					}
-				},
-
-				{
-					selector: 'edge',
-					style: {
-						width: 0.2,
-						'line-color': paperAngleToColor,
-						'line-opacity': 0.4,
-						// 'target-arrow-color': '#c3c',
-						// 'target-arrow-shape': 'triangle',
-						'curve-style': 'straight'
-						// label: 'data(id)',
-					}
-				}
+				node_drawing_style(),
+				edge_drawing_style()
 			],
 
 			layout: {
@@ -101,8 +94,10 @@
 	}
 
 	function updateBcy() {
-		bcy.unmount();
-		bcy.destroy();
+		if (bcy !== undefined) {
+			bcy.unmount();
+			bcy.destroy();
+		}
 
 		const k = 1.8;
 		const d = 2;
@@ -132,7 +127,7 @@
 						'line-color': paperAngleToColor,
 						'line-opacity': 0.4,
 
-						'curve-style': 'straight',
+						'curve-style': 'straight'
 						// 'curve-style': 'unbundled-bezier',
 						// 'target-arrow-color': 'black',
 						// 'target-arrow-shape': 'triangle'
@@ -146,8 +141,10 @@
 						'line-opacity': 0.4,
 
 						'curve-style': 'unbundled-bezier',
-						'control-point-distances': (e) => edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).d,
-						'control-point-weights': (e) => edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).w,
+						'control-point-distances': (e) =>
+							edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).d,
+						'control-point-weights': (e) =>
+							edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).w,
 						'edge-distances': 'node-position'
 						// 'curve-style': 'unbundled-bezier',
 						// 'target-arrow-color': 'black',
@@ -168,8 +165,19 @@
 		updateCy(datasets[datasetIndex].data);
 	}
 	function updateDirectedHandler(event) {
-		directed = event.target.value === "true" ? true : false;
+		directed = event.target.value === 'true' ? true : false;
 	}
+	function updateEdgeDrawingHandler(event) {
+		
+	}
+
+	onMount(() => {
+		cytoscape.use(cyCanvas);
+		updateCy(datasets.find((ds) => ds.checked == true).data);
+		// cy.on('position', (event) => {
+		// 	updateBcy();
+		// });
+	});
 </script>
 
 <div id="content">
@@ -189,9 +197,9 @@
 		</fieldset>
 		<fieldset on:change={updateDirectedHandler}>
 			<legend>Directed:</legend>
-			<input type="radio" id="directed-false" name="directed" value={"false"} checked />
+			<input type="radio" id="directed-false" name="directed" value={'false'} checked />
 			<label for="directed-false">false</label>
-			<input type="radio" id="directed-true" name="directed" value={"true"} />
+			<input type="radio" id="directed-true" name="directed" value={'true'} />
 			<label for="directed-true">true</label>
 		</fieldset>
 		<button on:click={updateBcy}>Update bcy</button>
@@ -205,12 +213,12 @@
 
 <style>
 	:global(html),
-    :global(body),	
+	:global(body),
 	#content {
 		margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
+		padding: 0;
+		width: 100%;
+		height: 100%;
 	}
 
 	.toolbar {
@@ -223,21 +231,19 @@
 
 	.sbs {
 		flex: 1 1 100%;
-		height: 100%;
-		width: 100%;
 	}
 
 	.row {
-		/* flex-grow: 0.5; */
-		/* height: 100%; */
+		box-sizing: border-box;
 		width: 100%;
-		height: 100%;
+		height: 80%;
 
 		display: flex;
 		flex-direction: row;
 		/* flex-wrap: nowrap; */
-
 	}
 
-	
+	.row * {
+		box-sizing: inherit;
+	}
 </style>
