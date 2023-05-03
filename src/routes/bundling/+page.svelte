@@ -22,6 +22,7 @@
 	$: {
 		updateCy(picked_dataset.data);
 	}
+	onMount(() => updateCy(picked_dataset.data));
 
 	const edge_drawing_default = 'default';
 	const edge_drawing_method = [
@@ -32,6 +33,9 @@
 	$: picked_edge_drawing_method = edge_drawing_method[edge_drawing_index];
 
 	let directed = false;
+
+	let epb_k = 1.8;
+	let epb_d = 2;
 
 	let cy;
 	let bcy;
@@ -176,11 +180,8 @@
 			bcy.destroy();
 		}
 
-		const k = 1.8;
-		const d = 2;
-
 		console.time('ControlP');
-		edgePathBundling(cy, k, d, directed);
+		edgePathBundling(cy, epb_k, epb_d, directed);
 		console.timeEnd('ControlP');
 
 		const c1json = cy.json();
@@ -258,6 +259,17 @@
 				</label>
 			{/each}
 		</fieldset>
+		<label>
+			<input type=number bind:value={epb_k} min=0.5 max=4 step=0.1>
+			<input type=range bind:value={epb_k} min=0.5 max=4 step=0.1>
+			K
+		</label>
+		
+		<label>
+			<input type=number bind:value={epb_d} min=0.5 max=4 step=0.1>
+			<input type=range bind:value={epb_d} min=0.5 max=4 step=0.1>
+			D
+		</label>
 		<button on:click={updateBcy}>Update bcy</button>
 	</div>
 
