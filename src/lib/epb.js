@@ -13,7 +13,11 @@ function getSourceTarget(edge) {
     };
 }
 
-export function edgePathBundling(cy, k, d) {
+export function edgePathBundling(cy, k, d, directed) {
+    if (directed === undefined) {
+        directed = false;
+    }
+
     const ns = "_epb";
     cy.batch(() => {
         cy.edges().forEach((edge) => {
@@ -50,7 +54,7 @@ export function edgePathBundling(cy, k, d) {
             root: source,
             goal: target,
             weight: (e) => e.data('epbweight'),
-            directed: false,
+            directed: directed,
         });
 
 
@@ -75,8 +79,8 @@ export function edgePathBundling(cy, k, d) {
             continue;
         }
 
-        const cps = path.nodes().map((node) => node.position()).slice(1, -2);
-        edge.data('controlPoints', edgePointsToWDs(edge, cps));
+        const cps = path.nodes().map((node) => node.position())
+        edge.data('controlPoints', cps);
         edge.data('controlPointCount', cps.length);
 
         path.edges().forEach((e) => {

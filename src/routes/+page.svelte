@@ -197,8 +197,8 @@
 						'line-opacity': 0.4,
 
 						'curve-style': 'unbundled-bezier',
-						'control-point-distances': (e) => e.data('controlPoints').d,
-						'control-point-weights': (e) => e.data('controlPoints').w,
+						'control-point-distances': (e) => edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).map((pt) => pt.d),
+						'control-point-weights': (e) => edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).map((pt) => pt.w),
 						'edge-distances': 'node-position'
 						// 'curve-style': 'unbundled-bezier',
 						// 'target-arrow-color': 'black',

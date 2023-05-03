@@ -35,7 +35,8 @@ import * as migrations from './migrations.json';
 import * as noise from './noise.json';
 import * as simple from './simple.json';
 
-export default {
+
+export const wellknown_datasets = {
     airlines: convert(airlines),
     airtraffic: convert(airtraffic),
     cubes1: convert(cubes1),
@@ -46,3 +47,17 @@ export default {
     noise: convert(noise),
     simple: convert(simple),
 }
+
+export const wellknown_datasets_array = [
+    { name: "airlines", data: wellknown_datasets.airlines },
+    { name: "airtraffic", data: wellknown_datasets.airtraffic },
+    { name: "cubes1", data: wellknown_datasets.cubes1 },
+    { name: "cubes2", data: wellknown_datasets.cubes2 },
+    { name: "cubes3", data: wellknown_datasets.cubes3 },
+    { name: "cubes4", data: wellknown_datasets.cubes4 },
+    { name: "migrations", data: wellknown_datasets.migrations },
+    { name: "noise", data: wellknown_datasets.noise },
+    { name: "simple", data: wellknown_datasets.simple },
+];
+
+export default wellknown_datasets;
