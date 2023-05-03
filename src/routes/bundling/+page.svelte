@@ -10,9 +10,6 @@
 	import Victor from 'victor';
 	import { bspline } from '$lib/splines/basismatrixspline';
 
-	/**
-	 * @type {HTMLDivElement}
-	 */
 	let gcont;
 	let epb;
 
@@ -89,7 +86,7 @@
 	function create_joining_endpoints(cp) {
 		const cs = Victor.fromObject(cp[0]);
 		const cs_succ = Victor.fromObject(cp[0]);
-		const ct = Victor.fromObject(cp[cp.length -1]);
+		const ct = Victor.fromObject(cp[cp.length - 1]);
 		const ct_prev = Victor.fromObject(cp[cp.length - 2]);
 
 		function create_mirrored_point(pt, mpt) {
@@ -98,11 +95,7 @@
 			return out;
 		}
 
-		return [
-			create_mirrored_point(cs_succ, cs),
-			...cp,
-			create_mirrored_point(ct_prev, ct),
-		]
+		return [create_mirrored_point(cs_succ, cs), ...cp, create_mirrored_point(ct_prev, ct)];
 	}
 
 	function canvas_bspline(edgedata, ct) {
@@ -120,7 +113,6 @@
 
 			const control_points = edge.data('controlPoints');
 			if (control_points !== null) {
-
 				const points = bspline(
 					create_joining_endpoints(control_points).map((pt) => [pt.x, pt.y]),
 					100
@@ -129,14 +121,12 @@
 				points.slice(1, -2).forEach((pt) => {
 					ct.lineTo(pt[0], pt[1]);
 				});
-
 			} else {
 				ct.moveTo(s.x, s.y);
-				ct.lineTo(t.x, t.y)
+				ct.lineTo(t.x, t.y);
 			}
 
 			// ct.lineTo(t.x, t.y);
-
 
 			// ct.strokeStyle = 'rgb(255, 0, 0, 0.2)';
 
