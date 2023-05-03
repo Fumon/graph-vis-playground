@@ -8,6 +8,7 @@
 	import { HSLToRGB, edgePointsToWDs, paperAssignColor } from '$lib/cyto/quick';
 
 	import Victor from 'victor';
+	import { bspline } from '$lib/splines/basismatrixspline';
 
 	/**
 	 * @type {HTMLDivElement}
@@ -20,7 +21,10 @@
 	let dataset_index = datasets.findIndex((e) => e.name == default_data);
 
 	const edge_drawing_default = 'default';
-	const edge_drawing_method = [{ name: 'default', layer: false }];
+	const edge_drawing_method = [
+		{ name: 'default', layer: false, layerf: null },
+		{ name: 'b-spline', layer: true, layerf: canvas_bspline }
+	];
 	let edge_drawing_index = edge_drawing_method.findIndex((e) => e.name == edge_drawing_default);
 
 	let cy;
@@ -33,38 +37,112 @@
 
 		const angle = t.clone().subtract(s).angleDeg();
 
-		return `rgb(${HSLToRGB(angle, 55, 40)})`;
+		return `hsl(${angle}, 55%, 40%)`;
 	}
 
 	function paperAngleToColor(e) {
 		return paperAssignColor(e.source().position(), e.target().position());
 	}
 
-	function node_drawing_style() {
+	function default_node_style() {
 		return {
 			selector: 'node',
 			style: {
-				'background-color': '#666',
 				// label: 'data(id)',
+				'background-color': '#666',
 				width: 0.5,
 				height: 0.5
 			}
 		};
 	}
 
-	function edge_drawing_style() {
+	function default_edge_style() {
 		return {
 			selector: 'edge',
 			style: {
+				// label: 'data(id)',
 				width: 0.2,
 				'line-color': paperAngleToColor,
 				'line-opacity': 0.4,
+				'curve-style': 'straight'
 				// 'target-arrow-color': '#c3c',
 				// 'target-arrow-shape': 'triangle',
-				'curve-style': 'straight'
-				// label: 'data(id)',
 			}
 		};
+	}
+
+	function null_edge_style() {
+		return {
+			selector: 'edge',
+			style: {
+				// label: 'data(id)',
+				width: 0.0,
+				// 'line-color': paperAngleToColor,
+				'line-opacity': 0.0,
+				'curve-style': 'straight'
+				// 'target-arrow-color': '#c3c',
+				// 'target-arrow-shape': 'triangle',
+			}
+		};
+	}
+
+	function create_joining_endpoints(cp) {
+		const cs = Victor.fromObject(cp[0]);
+		const cs_succ = Victor.fromObject(cp[0]);
+		const ct = Victor.fromObject(cp[cp.length -1]);
+		const ct_prev = Victor.fromObject(cp[cp.length - 2]);
+
+		function create_mirrored_point(pt, mpt) {
+			const out = mpt.clone().add(mpt.clone().subtract(pt));
+			debugger;
+			return out;
+		}
+
+		return [
+			create_mirrored_point(cs_succ, cs),
+			...cp,
+			create_mirrored_point(ct_prev, ct),
+		]
+	}
+
+	function canvas_bspline(edgedata, ct) {
+		const edge_style = default_edge_style();
+		const edge_opacity = edge_style.style['line-opacity'];
+		edgedata.forEach((edge) => {
+			const s = edge.source().position();
+			const t = edge.target().position();
+
+			ct.beginPath();
+			ct.lineWidth = edge_style.style.width;
+			const color = edge_style.style['line-color'](edge);
+			ct.strokeStyle = color;
+			ct.globalAlpha = edge_opacity;
+
+			const control_points = edge.data('controlPoints');
+			if (control_points !== null) {
+
+				const points = bspline(
+					create_joining_endpoints(control_points).map((pt) => [pt.x, pt.y]),
+					100
+				);
+
+				points.slice(1, -2).forEach((pt) => {
+					ct.lineTo(pt[0], pt[1]);
+				});
+
+			} else {
+				ct.moveTo(s.x, s.y);
+				ct.lineTo(t.x, t.y)
+			}
+
+			// ct.lineTo(t.x, t.y);
+
+
+			// ct.strokeStyle = 'rgb(255, 0, 0, 0.2)';
+
+			ct.stroke();
+			ct.globalAlpha = 1.0;
+		});
 	}
 
 	function updateCy(graphdata) {
@@ -79,8 +157,8 @@
 
 			style: [
 				// the stylesheet for the graph
-				node_drawing_style(),
-				edge_drawing_style()
+				default_node_style(),
+				default_edge_style()
 			],
 
 			layout: {
@@ -108,21 +186,27 @@
 		console.timeEnd('ControlP');
 
 		const c1json = cy.json();
+		const edm = edge_drawing_method[edge_drawing_index];
+
 		bcy = cytoscape({
 			container: epb,
 			elements: c1json.elements,
 			style: [
-				node_drawing_style(),
-				tweak(edge_drawing_style(), (o) => (o.selector = 'edge[controlPointCount < 1]')),
-				tweak(edge_drawing_style(), (o) => {
-					o.selector = 'edge[controlPointCount > 0]';
-					o.style['curve-style'] = 'unbundled-bezier';
-					o.style['control-point-distances'] = (e) =>
-						edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).d;
-					o.style['control-point-weights'] = (e) =>
-						edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).w;
-					o.style['edge-distances'] = 'node-position';
-				})
+				default_node_style(),
+				...(edm.layer
+					? [null_edge_style()]
+					: [
+							tweak(default_edge_style(), (o) => (o.selector = 'edge[controlPointCount < 1]')),
+							tweak(default_edge_style(), (o) => {
+								o.selector = 'edge[controlPointCount > 0]';
+								o.style['curve-style'] = 'unbundled-bezier';
+								o.style['control-point-distances'] = (e) =>
+									edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).d;
+								o.style['control-point-weights'] = (e) =>
+									edgePointsToWDs(e, e.data('controlPoints').slice(1, -2)).w;
+								o.style['edge-distances'] = 'node-position';
+							})
+					  ])
 			],
 			layout: {
 				name: 'preset'
@@ -130,6 +214,19 @@
 			zoom: c1json.zoom,
 			pan: c1json.pan
 		});
+
+		if (edm.layer) {
+			const layer = bcy.cyCanvas();
+			const canvas = layer.getCanvas();
+			const ctx = canvas.getContext('2d');
+
+			bcy.on('render', (evt) => {
+				layer.clear(ctx);
+				layer.setTransform(ctx);
+				edm.layerf(bcy.edges(), ctx);
+				layer.resetTransform(ctx);
+			});
+		}
 	}
 
 	function updateDatasetHandler(event) {
